@@ -1,0 +1,647 @@
+/* ------------------------------------------------------------------ *
+ * MindFuel — editorial theme
+ * Warm "paper" surface, Fraunces serif display, Inter body, terracotta
+ * accent. Deliberately calm and human, not a neon "AI" aesthetic — the
+ * tone matters for a wellness product.
+ * ------------------------------------------------------------------ */
+
+:root {
+  /* Surfaces */
+  --paper: #fbf7f0;
+  --paper-raised: #fffdf9;
+  --ink: #2b2722;
+  --ink-soft: #6b6157;
+  --ink-faint: #9a8f82;
+  --line: #e7ddcf;
+
+  /* Accents */
+  --terracotta: #c05f3c;
+  --terracotta-deep: #9d4527;
+  --sage: #6f8a6a;
+  --sage-soft: #eaf0e6;
+  --amber-soft: #f6ead2;
+
+  /* Mood scale (1 low → 5 great) */
+  --mood-1: #c75c5c;
+  --mood-2: #d98b54;
+  --mood-3: #e0bd5b;
+  --mood-4: #93b06a;
+  --mood-5: #6f8a6a;
+
+  /* Crisis / alert */
+  --alert-bg: #fbeae6;
+  --alert-line: #e7b4a6;
+  --alert-ink: #8a3320;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(43, 39, 34, 0.04), 0 8px 24px rgba(43, 39, 34, 0.06);
+  --maxw: 760px;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0 0 0.4em;
+}
+
+h1 {
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+}
+h2 {
+  font-size: 1.4rem;
+}
+h3 {
+  font-size: 1.1rem;
+}
+
+a {
+  color: var(--terracotta-deep);
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+/* Visible, generous focus ring for keyboard users (accessibility). */
+:focus-visible {
+  outline: 3px solid var(--terracotta);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Screen-reader-only utility. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 var(--radius-sm) 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+/* ------------------------------ layout ------------------------------ */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+  flex: 1;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+}
+.site-header__inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.brand__dot {
+  color: var(--terracotta);
+}
+.brand__tag {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+
+/* Exam context chip in the header — makes the persona logic visible. */
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--amber-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.context-chip strong {
+  color: var(--ink);
+}
+
+/* ------------------------------ tabs ------------------------------ */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--line);
+  margin: 0.5rem 0 1.5rem;
+}
+.tab {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 0.9rem;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.tab[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--terracotta);
+}
+.tab:hover {
+  color: var(--ink);
+}
+
+/* ------------------------------ cards ------------------------------ */
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.4rem;
+  margin-bottom: 1.25rem;
+}
+.card__eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--terracotta-deep);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* ------------------------------ forms ------------------------------ */
+
+label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+
+textarea,
+input[type='text'],
+input[type='date'],
+select {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+}
+textarea {
+  min-height: 130px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.field {
+  margin-bottom: 1.1rem;
+}
+.field__hint {
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  margin-top: 0.3rem;
+}
+
+/* Mood picker (radiogroup). */
+.mood-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.mood-option {
+  flex: 1 1 0;
+  min-width: 56px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  padding: 0.6rem 0.4rem;
+  text-align: center;
+  transition: transform 0.08s ease, border-color 0.12s ease;
+}
+.mood-option:hover {
+  transform: translateY(-1px);
+}
+.mood-option__face {
+  font-size: 1.5rem;
+  display: block;
+}
+.mood-option__label {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+.mood-option[aria-checked='true'] {
+  border-color: var(--ink);
+  background: var(--amber-soft);
+}
+
+/* Tag chips (multi-select toggle buttons). */
+.tag-row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+.tag-chip {
+  appearance: none;
+  font: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+.tag-chip[aria-pressed='true'] {
+  background: var(--sage-soft);
+  border-color: var(--sage);
+  color: #3f5a3a;
+}
+
+/* Buttons. */
+.btn {
+  appearance: none;
+  font: inherit;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1.3rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.btn--primary {
+  background: var(--terracotta);
+  color: #fff;
+}
+.btn--primary:hover {
+  background: var(--terracotta-deep);
+}
+.btn--primary:disabled {
+  background: var(--ink-faint);
+  cursor: not-allowed;
+}
+.btn--ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+.btn--ghost:hover {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+
+/* ------------------------------ insight ------------------------------ */
+
+.insight__tone {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-style: italic;
+  color: var(--ink);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0.25rem;
+}
+.chip {
+  font-size: 0.8rem;
+  background: var(--amber-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  color: var(--ink-soft);
+}
+.reasoning {
+  background: var(--sage-soft);
+  border-left: 3px solid var(--sage);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 0.8rem 1rem;
+  font-size: 0.92rem;
+  color: #3f5a3a;
+}
+.steps {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+.steps li {
+  margin-bottom: 0.3rem;
+}
+
+/* ------------------------------ safety ------------------------------ */
+
+.safety {
+  background: var(--alert-bg);
+  border: 1px solid var(--alert-line);
+  border-radius: var(--radius);
+  padding: 1.3rem;
+  margin-bottom: 1.25rem;
+}
+.safety h2 {
+  color: var(--alert-ink);
+}
+.helpline-list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.helpline {
+  background: var(--paper-raised);
+  border: 1px solid var(--alert-line);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+}
+.helpline__name {
+  font-weight: 600;
+}
+.helpline__contact {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--alert-ink);
+}
+
+/* ------------------------------ chat ------------------------------ */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: min(60vh, 520px);
+}
+.chat__log {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.bubble {
+  max-width: 80%;
+  padding: 0.7rem 0.95rem;
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+.bubble--user {
+  align-self: flex-end;
+  background: var(--terracotta);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.bubble--assistant {
+  align-self: flex-start;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+}
+.chat__form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+.chat__form input {
+  flex: 1;
+}
+
+/* ------------------------------ dashboard ------------------------------ */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.8rem;
+}
+.stat {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.9rem;
+}
+.stat__value {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+}
+.stat__label {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+/* Simple CSS bar chart for the mood trend. */
+.trend {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 120px;
+  padding-top: 0.5rem;
+}
+.trend__bar {
+  flex: 1;
+  min-width: 6px;
+  border-radius: 4px 4px 0 0;
+  background: var(--sage);
+}
+
+.trigger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.trigger {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+.trigger__bar {
+  height: 10px;
+  background: var(--terracotta);
+  border-radius: 5px;
+}
+.trigger__name {
+  text-transform: capitalize;
+}
+
+/* ------------------------------ mindfulness ------------------------------ */
+
+.breath {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  margin: 0.5rem 0;
+}
+.breath__circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--sage-soft), var(--sage));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  color: #2f4a2b;
+  transform: scale(0.7);
+  transition-property: transform;
+  transition-timing-function: ease-in-out;
+  box-shadow: var(--shadow);
+}
+.breath__label {
+  text-align: center;
+  font-size: 1.05rem;
+  min-height: 1.6em;
+  margin: 0.4rem 0 1rem;
+}
+
+.ground-list {
+  list-style: none;
+  margin: 0.6rem 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.ground-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+  font-weight: 400;
+}
+.ground-step input {
+  margin-top: 0.2rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--sage);
+  flex: none;
+}
+
+.technique-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.75rem 0 1.25rem;
+}
+
+/* ------------------------------ misc ------------------------------ */
+
+.muted {
+  color: var(--ink-soft);
+}
+.lead {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+}
+.disclaimer {
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+.empty {
+  text-align: center;
+  color: var(--ink-faint);
+  padding: 2rem 1rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: -0.15em;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Respect users who prefer reduced motion (accessibility). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
