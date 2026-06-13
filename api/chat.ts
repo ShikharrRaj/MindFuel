@@ -7,6 +7,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai'
+import { classifyAiError, withTransientRetry } from '../src/lib/aiError'
 import { buildPromptContext } from '../src/lib/context'
 import { buildChatSystemInstruction } from '../src/lib/prompts'
 import { detectCrisis, HELPLINES, SUPPORT_DISCLAIMER } from '../src/lib/safety'
@@ -25,6 +26,13 @@ interface ChatBody {
   messages: ChatMessage[]
 }
 
+function json(error: string, status: number): Response {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  })
+}
+
 function textStream(text: string): Response {
   const encoder = new TextEncoder()
   return new Response(
@@ -40,26 +48,26 @@ function textStream(text: string): Response {
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    return json('Method not allowed', 405)
   }
 
   const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return new Response('Server is not configured.', { status: 500 })
+  if (!apiKey) return json('Server is not configured.', 500)
 
   let body: ChatBody
   try {
     body = (await req.json()) as ChatBody
   } catch {
-    return new Response('Invalid JSON body.', { status: 400 })
+    return json('Invalid JSON body.', 400)
   }
 
   const messages = (body.messages ?? []).slice(-MAX_HISTORY)
   const last = messages[messages.length - 1]
   if (!last || last.role !== 'user' || !last.content.trim()) {
-    return new Response('A user message is required.', { status: 400 })
+    return json('A user message is required.', 400)
   }
   if (last.content.length > MAX_MESSAGE_LENGTH) {
-    return new Response('Message is too long.', { status: 413 })
+    return json('Message is too long.', 413)
   }
 
   // Crisis fast-path: respond with care + helplines directly, without coaching.
@@ -85,20 +93,22 @@ export default async function handler(req: Request): Promise<Response> {
 
   try {
     const ai = new GoogleGenAI({ apiKey })
-    const stream = await ai.models.generateContentStream({
-      model: MODEL,
-      contents: messages.map((m) => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }],
-      })),
-      config: {
-        systemInstruction: buildChatSystemInstruction(ctx),
-        temperature: 0.8,
-        // Disable extended thinking for snappier, lower-latency streaming.
-        thinkingConfig: { thinkingBudget: 0 },
-        maxOutputTokens: 600,
-      },
-    })
+    const stream = await withTransientRetry(() =>
+      ai.models.generateContentStream({
+        model: MODEL,
+        contents: messages.map((m) => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }],
+        })),
+        config: {
+          systemInstruction: buildChatSystemInstruction(ctx),
+          temperature: 0.8,
+          // Disable extended thinking for snappier, lower-latency streaming.
+          thinkingConfig: { thinkingBudget: 0 },
+          maxOutputTokens: 600,
+        },
+      }),
+    )
 
     const encoder = new TextEncoder()
     const readable = new ReadableStream({
@@ -121,8 +131,10 @@ export default async function handler(req: Request): Promise<Response> {
     })
   } catch (err) {
     console.error('chat error:', err)
-    return new Response('Could not reach the companion right now.', {
-      status: 502,
-    })
+    const { status, message } = classifyAiError(
+      err,
+      'Could not reach the companion right now. Please try again.',
+    )
+    return json(message, status)
   }
 }

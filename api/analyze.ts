@@ -9,6 +9,7 @@
  */
 
 import { GoogleGenAI, Type } from '@google/genai'
+import { classifyAiError, withTransientRetry } from '../src/lib/aiError'
 import { buildPromptContext } from '../src/lib/context'
 import {
   buildAnalyzeSystemInstruction,
@@ -104,22 +105,24 @@ export default async function handler(req: Request): Promise<Response> {
 
   try {
     const ai = new GoogleGenAI({ apiKey })
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: buildAnalyzeUserContent(mood, text, body.tags ?? []),
-      config: {
-        systemInstruction: buildAnalyzeSystemInstruction(ctx),
-        responseMimeType: 'application/json',
-        responseSchema: ANALYSIS_SCHEMA,
-        temperature: 0.7,
-        // gemini-2.5-flash is a "thinking" model whose reasoning tokens count
-        // against the output budget. This task needs no extended reasoning, so
-        // we disable thinking — it makes responses faster, cheaper, and ensures
-        // the full structured JSON fits within the output budget.
-        thinkingConfig: { thinkingBudget: 0 },
-        maxOutputTokens: 1200,
-      },
-    })
+    const response = await withTransientRetry(() =>
+      ai.models.generateContent({
+        model: MODEL,
+        contents: buildAnalyzeUserContent(mood, text, body.tags ?? []),
+        config: {
+          systemInstruction: buildAnalyzeSystemInstruction(ctx),
+          responseMimeType: 'application/json',
+          responseSchema: ANALYSIS_SCHEMA,
+          temperature: 0.7,
+          // gemini-2.5-flash is a "thinking" model whose reasoning tokens count
+          // against the output budget. This task needs no extended reasoning, so
+          // we disable thinking — it makes responses faster, cheaper, and ensures
+          // the full structured JSON fits within the output budget.
+          thinkingConfig: { thinkingBudget: 0 },
+          maxOutputTokens: 1200,
+        },
+      }),
+    )
 
     const analysis = JSON.parse(response.text ?? '{}') as Analysis
 
@@ -129,6 +132,10 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ analysis })
   } catch (err) {
     console.error('analyze error:', err)
-    return json({ error: 'Could not analyse the entry right now.' }, 502)
+    const { status, message } = classifyAiError(
+      err,
+      'Could not analyse the entry right now. Please try again.',
+    )
+    return json({ error: message }, status)
   }
 }
