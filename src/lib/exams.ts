@@ -46,11 +46,7 @@ export interface PhaseGuidance {
 /** Whole-day difference between two dates (exam date minus `now`). */
 export function daysUntil(examDateISO: string, now: Date): number {
   const exam = new Date(examDateISO + 'T00:00:00')
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  )
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const MS_PER_DAY = 24 * 60 * 60 * 1000
   return Math.round((exam.getTime() - today.getTime()) / MS_PER_DAY)
 }

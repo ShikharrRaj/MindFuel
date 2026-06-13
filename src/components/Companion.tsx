@@ -101,10 +101,7 @@ export default function Companion({ profile, recentMoodSummary }: Props) {
           aria-label="Conversation with MindFuel"
         >
           {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`bubble bubble--${m.role}`}
-            >
+            <div key={i} className={`bubble bubble--${m.role}`}>
               <span className="sr-only">
                 {m.role === 'user' ? 'You said: ' : 'MindFuel said: '}
               </span>

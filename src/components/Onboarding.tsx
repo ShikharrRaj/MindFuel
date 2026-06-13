@@ -80,7 +80,11 @@ export default function Onboarding({ onComplete }: Props) {
             need very different things.
           </p>
           {error && (
-            <p id="date-error" role="alert" style={{ color: 'var(--alert-ink)' }}>
+            <p
+              id="date-error"
+              role="alert"
+              style={{ color: 'var(--alert-ink)' }}
+            >
               {error}
             </p>
           )}

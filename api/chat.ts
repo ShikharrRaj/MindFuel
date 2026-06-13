@@ -64,7 +64,9 @@ export default async function handler(req: Request): Promise<Response> {
 
   // Crisis fast-path: respond with care + helplines directly, without coaching.
   if (detectCrisis(last.content).isCrisis) {
-    const lines = HELPLINES.map((h) => `• ${h.name}: ${h.contact} — ${h.detail}`)
+    const lines = HELPLINES.map(
+      (h) => `• ${h.name}: ${h.contact} — ${h.detail}`,
+    )
     return textStream(
       `I'm really glad you told me, and I'm concerned about how much pain you're in right now. You deserve support from someone who can be fully present with you. Please consider reaching out right now:\n\n${lines.join(
         '\n',

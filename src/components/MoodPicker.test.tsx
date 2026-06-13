@@ -13,7 +13,9 @@ describe('MoodPicker', () => {
   it('selects a mood on click', async () => {
     const onChange = vi.fn()
     render(<MoodPicker value={null} onChange={onChange} />)
-    await userEvent.click(screen.getByRole('radio', { name: /great \(5 of 5\)/i }))
+    await userEvent.click(
+      screen.getByRole('radio', { name: /great \(5 of 5\)/i }),
+    )
     expect(onChange).toHaveBeenCalledWith(5)
   })
 
@@ -28,9 +30,8 @@ describe('MoodPicker', () => {
 
   it('marks the active option with aria-checked', () => {
     render(<MoodPicker value={4} onChange={vi.fn()} />)
-    expect(screen.getByRole('radio', { name: /good \(4 of 5\)/i })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    )
+    expect(
+      screen.getByRole('radio', { name: /good \(4 of 5\)/i }),
+    ).toHaveAttribute('aria-checked', 'true')
   })
 })

@@ -18,13 +18,29 @@ export interface MoodPoint {
   mood: number
 }
 
+/**
+ * Placeholder/non-triggers the model sometimes emits when nothing specific is
+ * present (e.g. "None", "Unspecified sadness"). We filter these so the
+ * dashboard only ever shows real, actionable triggers.
+ */
+const PLACEHOLDER_TRIGGER = /^(none|n\/?a|na|unspecified|unknown|general)\b/i
+
+/** True when a trigger string is a real, specific trigger worth surfacing. */
+export function isMeaningfulTrigger(trigger: string): boolean {
+  const t = trigger.trim()
+  return t.length > 0 && !PLACEHOLDER_TRIGGER.test(t)
+}
+
 /** Group the most frequently AI-detected stress triggers, most common first. */
-export function topTriggers(entries: JournalEntry[], limit = 6): TriggerCount[] {
+export function topTriggers(
+  entries: JournalEntry[],
+  limit = 6,
+): TriggerCount[] {
   const counts = new Map<string, number>()
   for (const entry of entries) {
     for (const raw of entry.analysis?.triggers ?? []) {
+      if (!isMeaningfulTrigger(raw)) continue
       const trigger = raw.trim().toLowerCase()
-      if (!trigger) continue
       counts.set(trigger, (counts.get(trigger) ?? 0) + 1)
     }
   }
@@ -49,6 +65,89 @@ export function moodTrend(entries: JournalEntry[]): MoodPoint[] {
       mood: moods.reduce((sum, m) => sum + m, 0) / moods.length,
     }))
     .sort((a, b) => a.date.localeCompare(b.date))
+}
+
+/** Time granularity for the mood chart. */
+export type Granularity = 'entry' | 'hourly' | 'daily' | 'monthly'
+
+export interface SeriesPoint {
+  /** Sort/identity key (an ISO prefix, or the full timestamp for 'entry'). */
+  key: string
+  /** Human-readable label for the point (tooltip / accessibility). */
+  label: string
+  /** Average mood within the bucket. */
+  mood: number
+  /** How many check-ins fell into this bucket. */
+  count: number
+}
+
+function bucketKey(iso: string, g: Granularity): string {
+  switch (g) {
+    case 'entry':
+      return iso
+    case 'hourly':
+      return iso.slice(0, 13) // YYYY-MM-DDTHH
+    case 'daily':
+      return iso.slice(0, 10) // YYYY-MM-DD
+    case 'monthly':
+      return iso.slice(0, 7) // YYYY-MM
+  }
+}
+
+function bucketLabel(iso: string, g: Granularity): string {
+  const d = new Date(iso)
+  const date = d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  })
+  const time = d.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  switch (g) {
+    case 'entry':
+      return `${date}, ${time}`
+    case 'hourly':
+      return `${date}, ${d.toLocaleTimeString(undefined, { hour: 'numeric' })}`
+    case 'daily':
+      return date
+    case 'monthly':
+      return d.toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric',
+      })
+  }
+}
+
+/**
+ * Mood series at the requested granularity, oldest → newest. At 'entry'
+ * granularity every check-in is its own point (so a trend line appears as soon
+ * as there are two check-ins); coarser granularities average check-ins within
+ * each hour / day / month.
+ */
+export function moodSeries(
+  entries: JournalEntry[],
+  granularity: Granularity,
+): SeriesPoint[] {
+  const buckets = new Map<string, { sum: number; count: number; iso: string }>()
+  for (const entry of entries) {
+    const key = bucketKey(entry.createdAtISO, granularity)
+    const bucket = buckets.get(key)
+    if (bucket) {
+      bucket.sum += entry.mood
+      bucket.count += 1
+    } else {
+      buckets.set(key, { sum: entry.mood, count: 1, iso: entry.createdAtISO })
+    }
+  }
+  return [...buckets.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, b]) => ({
+      key,
+      label: bucketLabel(b.iso, granularity),
+      mood: b.sum / b.count,
+      count: b.count,
+    }))
 }
 
 /** Average mood across all entries (0 if none). Used for the headline stat. */

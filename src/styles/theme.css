@@ -285,7 +285,9 @@ textarea {
   background: var(--paper);
   padding: 0.6rem 0.4rem;
   text-align: center;
-  transition: transform 0.08s ease, border-color 0.12s ease;
+  transition:
+    transform 0.08s ease,
+    border-color 0.12s ease;
 }
 .mood-option:hover {
   transform: translateY(-1px);
@@ -492,6 +494,41 @@ textarea {
 .stat__label {
   font-size: 0.8rem;
   color: var(--ink-faint);
+}
+
+/* Trend header with the granularity segmented control. */
+.trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+.trend-head h3 {
+  margin: 0;
+}
+.seg {
+  display: inline-flex;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px;
+}
+.seg__btn {
+  appearance: none;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.seg__btn[aria-pressed='true'] {
+  background: var(--terracotta);
+  color: #fff;
 }
 
 /* Simple CSS bar chart for the mood trend. */

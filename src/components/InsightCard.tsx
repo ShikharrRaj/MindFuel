@@ -12,7 +12,11 @@ interface Props {
 
 export default function InsightCard({ analysis }: Props) {
   return (
-    <section className="card" aria-labelledby="insight-title" aria-live="polite">
+    <section
+      className="card"
+      aria-labelledby="insight-title"
+      aria-live="polite"
+    >
       <p className="card__eyebrow">What I'm noticing</p>
       <h2 id="insight-title" className="insight__tone">
         {analysis.tone}

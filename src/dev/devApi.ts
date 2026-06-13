@@ -35,7 +35,10 @@ function toWebRequest(req: IncomingMessage): Promise<Request> {
 }
 
 /** Pipe a Web `Response` (including a streaming body) back to Node's response. */
-async function sendWebResponse(res: ServerResponse, web: Response): Promise<void> {
+async function sendWebResponse(
+  res: ServerResponse,
+  web: Response,
+): Promise<void> {
   res.statusCode = web.status
   web.headers.forEach((value, key) => res.setHeader(key, value))
   if (!web.body) {
@@ -52,11 +55,7 @@ async function sendWebResponse(res: ServerResponse, web: Response): Promise<void
 }
 
 /** Wire a single /api route to its Edge handler module. */
-function route(
-  server: ViteDevServer,
-  path: string,
-  modulePath: string,
-): void {
+function route(server: ViteDevServer, path: string, modulePath: string): void {
   server.middlewares.use(path, async (req, res, next) => {
     if (req.method !== 'POST') return next()
     try {

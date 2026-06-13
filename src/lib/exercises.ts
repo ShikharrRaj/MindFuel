@@ -12,7 +12,10 @@
 import type { MoodLevel, Severity } from './types'
 import type { PrepPhase } from './exams'
 
-export type TechniqueId = 'box-breathing' | 'four-seven-eight' | 'grounding-54321'
+export type TechniqueId =
+  | 'box-breathing'
+  | 'four-seven-eight'
+  | 'grounding-54321'
 
 export type ExerciseKind = 'breathing' | 'grounding'
 
@@ -101,7 +104,14 @@ const OVERWHELM_SIGNALS = [
   'anxiety',
   'racing thoughts',
 ]
-const SLEEP_SIGNALS = ['low sleep', 'sleep', 'tired', 'exhausted', 'restless', 'insomnia']
+const SLEEP_SIGNALS = [
+  'low sleep',
+  'sleep',
+  'tired',
+  'exhausted',
+  'restless',
+  'insomnia',
+]
 
 function hasSignal(signals: string[], needles: string[]): boolean {
   return signals.some((s) => needles.some((n) => s.includes(n)))
@@ -113,7 +123,9 @@ function hasSignal(signals: string[], needles: string[]): boolean {
  *  2. Sleep difficulty, or wind-down phases (final sprint / exam day) → 4-7-8.
  *  3. Otherwise → box breathing as a reliable default.
  */
-export function recommendExercise(ctx: ExerciseContext): ExerciseRecommendation {
+export function recommendExercise(
+  ctx: ExerciseContext,
+): ExerciseRecommendation {
   const signals = ctx.signals.map((s) => s.toLowerCase())
 
   if (ctx.mood <= 2 || hasSignal(signals, OVERWHELM_SIGNALS)) {

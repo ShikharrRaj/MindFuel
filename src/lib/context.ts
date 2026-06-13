@@ -5,7 +5,12 @@
  * entry being analysed plus a short aggregate string.
  */
 
-import { EXAM_LABELS, countdownLabel, daysUntil, guidanceForDays } from './exams'
+import {
+  EXAM_LABELS,
+  countdownLabel,
+  daysUntil,
+  guidanceForDays,
+} from './exams'
 import type { ExamType } from './types'
 import type { PromptContext } from './prompts'
 
@@ -16,7 +21,10 @@ export interface ContextInput {
   recentMoodSummary: string
 }
 
-export function buildPromptContext(input: ContextInput, now: Date): PromptContext {
+export function buildPromptContext(
+  input: ContextInput,
+  now: Date,
+): PromptContext {
   const days = daysUntil(input.examDateISO, now)
   const guidance = guidanceForDays(days)
   return {

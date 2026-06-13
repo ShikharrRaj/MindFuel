@@ -23,9 +23,9 @@ export default function MoodPicker({ value, onChange }: Props) {
   function handleKey(e: React.KeyboardEvent, level: MoodLevel) {
     let next: MoodLevel | null = null
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      next = (Math.min(5, level + 1) as MoodLevel)
+      next = Math.min(5, level + 1) as MoodLevel
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      next = (Math.max(1, level - 1) as MoodLevel)
+      next = Math.max(1, level - 1) as MoodLevel
     } else if (e.key === 'Home') {
       next = 1
     } else if (e.key === 'End') {

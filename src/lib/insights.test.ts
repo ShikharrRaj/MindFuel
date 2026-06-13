@@ -2,12 +2,28 @@ import { describe, expect, it } from 'vitest'
 import {
   averageMood,
   currentStreak,
+  isMeaningfulTrigger,
+  moodSeries,
   moodTrend,
   summarizeRecentMood,
   tagMoodImpact,
   topTriggers,
 } from './insights'
-import type { JournalEntry, MoodLevel } from './types'
+import type { Analysis, JournalEntry, MoodLevel } from './types'
+
+/** Build a complete, type-safe Analysis fixture from just the triggers. */
+function analysisWith(triggers: string[]): Analysis {
+  return {
+    triggers,
+    themes: [],
+    tone: 'neutral',
+    summary: 'summary',
+    copingStrategy: { title: 'strategy', steps: ['step'] },
+    encouragement: 'you’ve got this',
+    reasoning: 'reasoning',
+    severity: 'ok',
+  }
+}
 
 /** Test helper to build an entry with sensible defaults. */
 function entry(
@@ -28,12 +44,12 @@ describe('topTriggers', () => {
       entry({
         createdAtISO: '2026-06-01T10:00:00Z',
         mood: 2,
-        analysis: { triggers: ['Mock test', 'sleep'] } as never,
+        analysis: analysisWith(['Mock test', 'sleep']),
       }),
       entry({
         createdAtISO: '2026-06-02T10:00:00Z',
         mood: 3,
-        analysis: { triggers: ['mock test'] } as never,
+        analysis: analysisWith(['mock test']),
       }),
     ]
     const result = topTriggers(entries)
@@ -42,9 +58,64 @@ describe('topTriggers', () => {
   })
 
   it('ignores entries without analysis', () => {
-    expect(topTriggers([entry({ createdAtISO: '2026-06-01', mood: 3 })])).toEqual(
-      [],
-    )
+    expect(
+      topTriggers([entry({ createdAtISO: '2026-06-01', mood: 3 })]),
+    ).toEqual([])
+  })
+
+  it('filters out placeholder / non-triggers the model may emit', () => {
+    const entries = [
+      entry({
+        createdAtISO: '2026-06-01T10:00:00Z',
+        mood: 2,
+        analysis: analysisWith(['None', 'Unspecified sadness', 'low sleep']),
+      }),
+    ]
+    const result = topTriggers(entries)
+    expect(result).toEqual([{ trigger: 'low sleep', count: 1 }])
+  })
+})
+
+describe('isMeaningfulTrigger', () => {
+  it('accepts real triggers and rejects placeholders', () => {
+    expect(isMeaningfulTrigger('mock test')).toBe(true)
+    expect(isMeaningfulTrigger('None')).toBe(false)
+    expect(isMeaningfulTrigger('N/A')).toBe(false)
+    expect(isMeaningfulTrigger('Unspecified positive experience')).toBe(false)
+    expect(isMeaningfulTrigger('   ')).toBe(false)
+  })
+})
+
+describe('moodSeries', () => {
+  const entries = [
+    entry({ createdAtISO: '2026-06-01T09:00:00Z', mood: 2 }),
+    entry({ createdAtISO: '2026-06-01T18:00:00Z', mood: 4 }),
+    entry({ createdAtISO: '2026-07-02T09:00:00Z', mood: 5 }),
+  ]
+
+  it('per-entry granularity keeps every check-in as its own point', () => {
+    const series = moodSeries(entries, 'entry')
+    expect(series).toHaveLength(3)
+    expect(series.map((p) => p.mood)).toEqual([2, 4, 5])
+    expect(series.every((p) => p.count === 1)).toBe(true)
+  })
+
+  it('daily granularity averages same-day check-ins', () => {
+    const series = moodSeries(entries, 'daily')
+    expect(series).toHaveLength(2)
+    expect(series[0]).toMatchObject({ key: '2026-06-01', mood: 3, count: 2 })
+  })
+
+  it('monthly granularity groups by month', () => {
+    const series = moodSeries(entries, 'monthly')
+    expect(series.map((p) => p.key)).toEqual(['2026-06', '2026-07'])
+    expect(series[0]).toMatchObject({ mood: 3, count: 2 })
+  })
+
+  it('returns points sorted oldest to newest', () => {
+    const series = moodSeries(entries, 'entry')
+    const keys = series.map((p) => p.key)
+    expect([...keys].sort()).toEqual(keys)
   })
 })
 

@@ -3,7 +3,11 @@ import { recommendExercise, roundDuration, TECHNIQUES } from './exercises'
 
 describe('recommendExercise', () => {
   it('chooses grounding when mood is very low', () => {
-    const rec = recommendExercise({ mood: 1, severity: 'elevated', signals: [] })
+    const rec = recommendExercise({
+      mood: 1,
+      severity: 'elevated',
+      signals: [],
+    })
     expect(rec.technique.id).toBe('grounding-54321')
   })
 
@@ -36,7 +40,11 @@ describe('recommendExercise', () => {
   })
 
   it('defaults to box breathing for a steady day', () => {
-    const rec = recommendExercise({ mood: 4, severity: 'ok', signals: ['revision'] })
+    const rec = recommendExercise({
+      mood: 4,
+      severity: 'ok',
+      signals: ['revision'],
+    })
     expect(rec.technique.id).toBe('box-breathing')
   })
 

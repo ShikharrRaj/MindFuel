@@ -9,11 +9,7 @@ import { HELPLINES, SUPPORT_DISCLAIMER } from '../lib/safety'
 
 export default function SafetyCard() {
   return (
-    <section
-      className="safety"
-      role="alert"
-      aria-labelledby="safety-title"
-    >
+    <section className="safety" role="alert" aria-labelledby="safety-title">
       <h2 id="safety-title">You don't have to carry this alone</h2>
       <p>
         It sounds like you're going through something really heavy right now. An

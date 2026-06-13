@@ -5,10 +5,12 @@
  * the pure functions in lib/insights, so the numbers are testable and honest.
  */
 
+import { useState } from 'react'
 import {
   averageMood,
   currentStreak,
-  moodTrend,
+  type Granularity,
+  moodSeries,
   tagMoodImpact,
   topTriggers,
 } from '../lib/insights'
@@ -17,6 +19,13 @@ import type { JournalEntry } from '../lib/types'
 interface Props {
   entries: JournalEntry[]
 }
+
+const GRANULARITIES: { id: Granularity; label: string }[] = [
+  { id: 'entry', label: 'Per check-in' },
+  { id: 'hourly', label: 'Hourly' },
+  { id: 'daily', label: 'Daily' },
+  { id: 'monthly', label: 'Monthly' },
+]
 
 const MOOD_COLORS = [
   'var(--mood-1)',
@@ -40,6 +49,8 @@ function strongestNegativeTag(entries: JournalEntry[]) {
 }
 
 export default function Dashboard({ entries }: Props) {
+  const [granularity, setGranularity] = useState<Granularity>('entry')
+
   if (entries.length === 0) {
     return (
       <section className="card" aria-labelledby="dash-title">
@@ -54,7 +65,7 @@ export default function Dashboard({ entries }: Props) {
   }
 
   const now = new Date()
-  const trend = moodTrend(entries)
+  const series = moodSeries(entries, granularity)
   const triggers = topTriggers(entries)
   const maxTrigger = triggers[0]?.count ?? 1
   const highlight = strongestNegativeTag(entries)
@@ -82,35 +93,59 @@ export default function Dashboard({ entries }: Props) {
       {highlight && (
         <p className="reasoning" style={{ marginBottom: '1.5rem' }}>
           <strong>A pattern worth noticing: </strong>
-          your mood tends to dip by about {Math.abs(highlight.delta).toFixed(1)}{' '}
+          your mood tends to dip by about {Math.abs(highlight.delta).toFixed(
+            1,
+          )}{' '}
           points on “{highlight.tag}” days. Being gentle with yourself on those
           days may help.
         </p>
       )}
 
-      <h3>Mood trend</h3>
-      {trend.length >= 2 ? (
+      <div className="trend-head">
+        <h3>Mood trend</h3>
+        <div className="seg" role="group" aria-label="Chart granularity">
+          {GRANULARITIES.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              className="seg__btn"
+              aria-pressed={granularity === id}
+              onClick={() => setGranularity(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {series.length >= 2 ? (
         <div
           className="trend"
           role="img"
-          aria-label={`Mood trend across ${trend.length} days, from ${trend[0].mood.toFixed(
+          aria-label={`Mood trend (${granularity}) across ${series.length} points, from ${series[0].mood.toFixed(
             1,
-          )} to ${trend[trend.length - 1].mood.toFixed(1)} out of 5.`}
+          )} to ${series[series.length - 1].mood.toFixed(1)} out of 5.`}
         >
-          {trend.map((point) => (
+          {series.map((point) => (
             <div
-              key={point.date}
+              key={point.key}
               className="trend__bar"
               style={{
                 height: `${(point.mood / 5) * 100}%`,
                 background: MOOD_COLORS[Math.round(point.mood) - 1],
               }}
-              title={`${point.date}: ${point.mood.toFixed(1)}/5`}
+              title={`${point.label}: ${point.mood.toFixed(1)}/5${
+                point.count > 1 ? ` (avg of ${point.count})` : ''
+              }`}
             />
           ))}
         </div>
       ) : (
-        <p className="muted">A trend line appears after two days of check-ins.</p>
+        <p className="muted">
+          {entries.length < 2
+            ? 'Your trend line appears after your second check-in.'
+            : 'Not enough points at this granularity — try “Per check-in”.'}
+        </p>
       )}
 
       {triggers.length > 0 && (

@@ -20,9 +20,9 @@ describe('detectCrisis', () => {
     expect(detectCrisis('My diet has been terrible this week').isCrisis).toBe(
       false,
     )
-    expect(detectCrisis('This physics chapter is killing my motivation').isCrisis).toBe(
-      false,
-    )
+    expect(
+      detectCrisis('This physics chapter is killing my motivation').isCrisis,
+    ).toBe(false)
   })
 
   it('returns the matched fragment for explainability', () => {

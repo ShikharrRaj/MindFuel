@@ -34,7 +34,9 @@ describe('analysis prompts', () => {
   })
 
   it('user content includes mood, tags, and the entry', () => {
-    const content = buildAnalyzeUserContent(2, 'I feel overwhelmed', ['mock test'])
+    const content = buildAnalyzeUserContent(2, 'I feel overwhelmed', [
+      'mock test',
+    ])
     expect(content).toContain('2/5')
     expect(content).toContain('mock test')
     expect(content).toContain('I feel overwhelmed')

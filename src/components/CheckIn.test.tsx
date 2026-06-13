@@ -19,7 +19,9 @@ describe('CheckIn', () => {
     const onSubmit = vi.fn()
     render(<CheckIn pending={false} error={null} onSubmit={onSubmit} />)
 
-    await userEvent.click(screen.getByRole('radio', { name: /low \(2 of 5\)/i }))
+    await userEvent.click(
+      screen.getByRole('radio', { name: /low \(2 of 5\)/i }),
+    )
     const textarea = screen.getByLabelText(/what's on your mind/i)
     await userEvent.type(textarea, 'Mock test went badly today')
     await userEvent.click(screen.getByRole('button', { name: /mock test/i }))

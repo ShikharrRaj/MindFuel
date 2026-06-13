@@ -2,25 +2,25 @@
 
 A private, Generative-AI wellness companion for students preparing for
 high-stakes exams (NEET, JEE, CUET, CAT, GATE, UPSC). Students journal freely,
-log their mood, and MindFuel uses **Google Gemini** to surface *hidden* stress
+log their mood, and MindFuel uses **Google Gemini** to surface _hidden_ stress
 triggers and emotional patterns, then offers context-aware coping support — and
 escalates safely when someone is in crisis.
 
 > **Persona / vertical:** the exam-stressed student. Every decision the app makes
-> is conditioned on *their* exam and *their* prep phase.
+> is conditioned on _their_ exam and _their_ prep phase.
 
 ---
 
 ## Why this design wins on each evaluation axis
 
-| Criterion | How MindFuel addresses it |
-| --- | --- |
-| **Problem alignment** | Real Gemini analysis of open-ended journals → named triggers, emotional themes, and a coping strategy. Exam + prep-phase aware (foundation vs. final-sprint). A longitudinal **Patterns** view shows trends "standard trackers miss". |
+| Criterion                     | How MindFuel addresses it                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Problem alignment**         | Real Gemini analysis of open-ended journals → named triggers, emotional themes, and a coping strategy. Exam + prep-phase aware (foundation vs. final-sprint). A longitudinal **Patterns** view shows trends "standard trackers miss".                                                                                                                                                     |
 | **Security / responsibility** | API key lives **only** server-side (Vercel Edge functions) — never in the browser. Defence-in-depth **crisis detection** (local + AI) routes to verified Indian helplines instead of coaching. Inputs are validated and length-capped. Journals are stored **on-device only**; a "Delete my data" control is always available. Clear "not a substitute for professional care" disclaimer. |
-| **Efficiency** | Lean bundle (~68 KB gzip), no artificial loading delays, **token-streamed** chat for instant feedback, tiny privacy-preserving payloads (only the current entry + a short mood summary are sent, never full history). |
-| **Testing** | 37 unit + component tests (Vitest + Testing Library) covering the context engine, safety detector, insights math, and the key UI flows. |
-| **Accessibility** | Skip link, semantic landmarks, ARIA tab/radiogroup/log patterns, keyboard-operable mood picker, live regions, visible focus rings, `prefers-reduced-motion` support. |
-| **Code quality** | Typed throughout, pure logic isolated from UI and network, one component per file, documented modules. The AI call is a single isolated function — swappable without UI changes. |
+| **Efficiency**                | Lean bundle (~71 KB gzip), no artificial loading delays, **token-streamed** chat for instant feedback, tiny privacy-preserving payloads (only the current entry + a short mood summary are sent, never full history).                                                                                                                                                                     |
+| **Testing**                   | 50 unit + component tests (Vitest + Testing Library) covering the context engine, safety detector, insights math, and the key UI flows.                                                                                                                                                                                                                                                   |
+| **Accessibility**             | Skip link, semantic landmarks, ARIA tab/radiogroup/log patterns, keyboard-operable mood picker, live regions, visible focus rings, `prefers-reduced-motion` support.                                                                                                                                                                                                                      |
+| **Code quality**              | Typed throughout, pure logic isolated from UI and network, one component per file, documented modules. The AI call is a single isolated function — swappable without UI changes.                                                                                                                                                                                                          |
 
 ---
 

@@ -47,7 +47,8 @@ export function buildAnalyzeSystemInstruction(ctx: PromptContext): string {
   return [
     personaPreamble(ctx),
     '',
-    'Task: Analyse the student\'s journal entry and mood. Infer HIDDEN stress triggers and emotional patterns they may not have named explicitly. Then produce a single, phase-appropriate coping strategy and brief encouragement.',
+    "Task: Analyse the student's journal entry and mood. Infer HIDDEN stress triggers and emotional patterns they may not have named explicitly. Then produce a single, phase-appropriate coping strategy and brief encouragement.",
+    'For "triggers" and "themes": include ONLY specific, real items actually grounded in what the student wrote. If there are none, return an empty array. NEVER output placeholder values such as "None", "N/A", "Unknown", or "Unspecified ..." — an empty array is correct in that case.',
     'In the "reasoning" field, explain in one or two sentences HOW you connected their context (mood, prep phase, detected triggers) to the advice you chose — written for the student to read, in second person ("Because you mentioned...").',
     'Set "severity" to "crisis" only for self-harm / suicidal signals, "elevated" for high distress or burnout, otherwise "ok".',
     'Respond ONLY with JSON matching the provided schema. Do not wrap it in markdown.',
@@ -55,8 +56,14 @@ export function buildAnalyzeSystemInstruction(ctx: PromptContext): string {
 }
 
 /** The user-content portion of the analysis call. */
-export function buildAnalyzeUserContent(mood: number, text: string, tags: string[]): string {
-  const tagLine = tags.length ? `\nContext tags they selected: ${tags.join(', ')}.` : ''
+export function buildAnalyzeUserContent(
+  mood: number,
+  text: string,
+  tags: string[],
+): string {
+  const tagLine = tags.length
+    ? `\nContext tags they selected: ${tags.join(', ')}.`
+    : ''
   return `Mood today: ${mood}/5.${tagLine}\n\nJournal entry:\n"""\n${text}\n"""`
 }
 

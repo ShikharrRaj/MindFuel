@@ -8,7 +8,7 @@
  * label is announced via aria-live, and the grounding steps are real checkboxes.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { roundDuration, type Technique } from '../lib/exercises'
 
 interface Props {
@@ -31,7 +31,8 @@ function prefersReducedMotion(): boolean {
 }
 
 function Breathing({ technique }: { technique: Technique }) {
-  const phases = technique.phases ?? []
+  // Memoised so the timer effect's dependency identity is stable across renders.
+  const phases = useMemo(() => technique.phases ?? [], [technique])
   const totalRounds = technique.rounds ?? 4
   const reduced = prefersReducedMotion()
 
@@ -90,10 +91,7 @@ function Breathing({ technique }: { technique: Technique }) {
 
   // Visual scale: grow on inhale, shrink on exhale, hold steady otherwise.
   const label = phase?.label ?? ''
-  let scale = 0.7
-  if (label.includes('in')) scale = 1
-  else if (label.includes('out')) scale = 0.55
-  else scale = 0.78 // hold
+  const scale = label.includes('in') ? 1 : label.includes('out') ? 0.55 : 0.78
 
   return (
     <div>
@@ -141,7 +139,9 @@ function Breathing({ technique }: { technique: Technique }) {
 
 function Grounding({ technique }: { technique: Technique }) {
   const steps = technique.steps ?? []
-  const [checked, setChecked] = useState<boolean[]>(() => steps.map(() => false))
+  const [checked, setChecked] = useState<boolean[]>(() =>
+    steps.map(() => false),
+  )
 
   function toggle(i: number) {
     setChecked((prev) => prev.map((v, idx) => (idx === i ? !v : v)))

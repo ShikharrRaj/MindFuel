@@ -64,7 +64,11 @@ export default function CheckIn({ pending, error, onSubmit }: Props) {
           </span>
           <MoodPicker value={mood} onChange={setMood} />
           {showMoodError && (
-            <p role="alert" className="field__hint" style={{ color: 'var(--alert-ink)' }}>
+            <p
+              role="alert"
+              className="field__hint"
+              style={{ color: 'var(--alert-ink)' }}
+            >
               Please pick a mood first.
             </p>
           )}
@@ -85,7 +89,11 @@ export default function CheckIn({ pending, error, onSubmit }: Props) {
             except for one private analysis.
           </p>
           {showTextError && (
-            <p role="alert" className="field__hint" style={{ color: 'var(--alert-ink)' }}>
+            <p
+              role="alert"
+              className="field__hint"
+              style={{ color: 'var(--alert-ink)' }}
+            >
               Add a few words so there's something to reflect on.
             </p>
           )}
