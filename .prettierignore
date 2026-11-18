@@ -2,3 +2,16 @@ dist
 coverage
 node_modules
 package-lock.json
+
+# Engineering OS bundle — vendored from the canonical repo; keep byte-identical for re-syncs
+.claude
+Knowledge
+playbooks
+templates
+scripts
+docs/engineering-os-standard.md
+docs/memory
+
+.impeccable/
+test-results/
+playwright-report/
