@@ -3,7 +3,7 @@
  * downstream decision. We ask for the minimum needed and nothing identifying.
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EXAM_LABELS } from '../lib/exams'
 import type { ExamType, UserProfile } from '../lib/types'
 
@@ -11,9 +11,15 @@ const EXAM_OPTIONS = Object.keys(EXAM_LABELS) as ExamType[]
 
 interface Props {
   onComplete: (profile: UserProfile) => void
+  /** Move focus to the heading (e.g. after "Delete my data"). */
+  focusTitle?: boolean
 }
 
-export default function Onboarding({ onComplete }: Props) {
+export default function Onboarding({ onComplete, focusTitle = false }: Props) {
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    if (focusTitle) titleRef.current?.focus()
+  }, [focusTitle])
   const [name, setName] = useState('')
   const [exam, setExam] = useState<ExamType>('JEE')
   const [examDateISO, setExamDateISO] = useState('')
@@ -31,7 +37,9 @@ export default function Onboarding({ onComplete }: Props) {
   return (
     <section className="card" aria-labelledby="onboarding-title">
       <p className="card__eyebrow">Welcome</p>
-      <h1 id="onboarding-title">Your private exam-wellness companion</h1>
+      <h1 id="onboarding-title" ref={titleRef} tabIndex={-1}>
+        Your private exam-wellness companion
+      </h1>
       <p className="lead">
         A calm space to check in, understand your stress, and get support that
         actually fits your exam journey. Everything you write stays on your

@@ -5,9 +5,16 @@
  */
 
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportError } from '../device/errorReporter'
+import HelpNow from './HelpNow'
 
 interface Props {
   children: ReactNode
+  /**
+   * Inline fallback for one section, so the rest of the app (incl. the SOS
+   * button) keeps working. Omitted at the root: a full-page fallback is shown.
+   */
+  fallback?: ReactNode
 }
 
 interface State {
@@ -22,8 +29,9 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // Log for debugging; never surfaces sensitive data to the student.
+    // Log for debugging, and send a scrubbed report (no journal text).
     console.error('Unexpected UI error:', error, info.componentStack)
+    reportError(error, 'boundary')
   }
 
   private handleReload = () => {
@@ -33,6 +41,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (!this.state.hasError) return this.props.children
+    if (this.props.fallback !== undefined) return this.props.fallback
     return (
       <main className="app-main">
         <section className="card" role="alert">
@@ -48,6 +57,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           >
             Reload MindFuel
           </button>
+          <HelpNow title="If you need support right now" />
         </section>
       </main>
     )

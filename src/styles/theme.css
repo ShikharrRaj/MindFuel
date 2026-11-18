@@ -11,12 +11,14 @@
   --paper-raised: #fffdf9;
   --ink: #2b2722;
   --ink-soft: #6b6157;
-  --ink-faint: #9a8f82;
+  --ink-faint: #766b5f; /* 4.87:1 on flat paper, 5.12:1 on cards (AA); use
+                           --ink-soft for text that sits on the page washes */
   --line: #e7ddcf;
 
   /* Accents */
   --terracotta: #c05f3c;
   --terracotta-deep: #9d4527;
+  --terracotta-darker: #7f3a22;
   --sage: #6f8a6a;
   --sage-soft: #eaf0e6;
   --amber-soft: #f6ead2;
@@ -33,10 +35,35 @@
   --alert-line: #e7b4a6;
   --alert-ink: #8a3320;
 
-  --radius: 14px;
-  --radius-sm: 9px;
-  --shadow: 0 1px 2px rgba(43, 39, 34, 0.04), 0 8px 24px rgba(43, 39, 34, 0.06);
+  --sage-ink: #3f5a3a; /* sage text on sage-soft / paper (AA) */
+
+  /* Ambient washes behind the page: watercolour on paper, never neon. */
+  --honey: #e0bd5b;
+  --wash-sage: color-mix(in srgb, var(--sage) 18%, transparent);
+  --wash-terracotta: color-mix(in srgb, var(--terracotta) 11%, transparent);
+  --wash-honey: color-mix(in srgb, var(--honey) 16%, transparent);
+  --sage-line: color-mix(in srgb, var(--sage) 50%, transparent);
+  /* The breathing circles (Calm pacer + greeting orb). */
+  --orb-fill: radial-gradient(circle at 35% 30%, var(--sage-soft), var(--sage));
+
+  --radius: 18px;
+  --radius-sm: 10px;
+  --shadow:
+    0 1px 2px rgba(43, 39, 34, 0.04), 0 10px 30px -8px rgba(43, 39, 34, 0.09);
+  --shadow-float:
+    0 2px 6px rgba(43, 39, 34, 0.06), 0 20px 48px -14px rgba(43, 39, 34, 0.24);
   --maxw: 760px;
+
+  /* Motion: unhurried, decelerating. All of it stops for reduced motion. */
+  --ease-calm: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-breath: ease-in-out;
+  --dur-press: 120ms; /* a button giving way under the finger */
+  --dur-base: 250ms; /* hovers, colour changes, panels opening */
+  --dur-enter: 600ms; /* a floating surface arriving */
+  --dur-arrive: 900ms; /* the page settling in, once per visit */
+  --dur-drift: 64s; /* background washes: far too slow to notice moving */
+  --breath-cycle: 11s; /* ~5.5 breaths a minute: 5.5 s in, 5.5 s out */
+  --dur-scene: 1.6s; /* crossfade between background scenes */
 
   --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
@@ -51,9 +78,15 @@ body {
   margin: 0;
   padding: 0;
 }
+/* Keyboard focus is scrolled clear of the floating dock (WCAG 2.4.11). */
+html {
+  scroll-padding-bottom: calc(var(--dock-space, 0px) + 1.25rem);
+}
 
 body {
-  background: var(--paper);
+  background-color: var(--paper);
+  /* Faint paper grain (an inline SVG noise tile; img-src allows data:). */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .17 0 0 0 0 .15 0 0 0 0 .13 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 16px;
@@ -127,16 +160,105 @@ p {
 /* ------------------------------ layout ------------------------------ */
 
 .app-shell {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Soft colour washes drifting very slowly behind everything (decorative). */
+.app-shell::before,
+.app-shell::after,
+body::before {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  /* Kept modest: each animated layer costs GPU memory for the session. */
+  width: 64vmax;
+  height: 64vmax;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.app-shell::before {
+  top: -32vmax;
+  left: -26vmax;
+  background: radial-gradient(closest-side, var(--wash-sage), transparent);
+  animation: drift-a calc(var(--dur-drift) * 0.75) var(--ease-calm) infinite
+    alternate;
+}
+.app-shell::after {
+  bottom: -38vmax;
+  right: -30vmax;
+  background: radial-gradient(
+    closest-side,
+    var(--wash-terracotta),
+    transparent
+  );
+  animation: drift-b var(--dur-drift) var(--ease-calm) infinite alternate;
+}
+body::before {
+  top: 30vh;
+  right: -40vmax;
+  width: 50vmax;
+  height: 50vmax;
+  background: radial-gradient(closest-side, var(--wash-honey), transparent);
+  animation: drift-c calc(var(--dur-drift) * 1.25) var(--ease-calm) infinite
+    alternate;
+}
+@keyframes drift-a {
+  to {
+    transform: translate3d(14vmax, 9vmax, 0) scale(1.12);
+  }
+}
+@keyframes drift-b {
+  to {
+    transform: translate3d(-12vmax, -12vmax, 0) scale(0.9);
+  }
+}
+@keyframes drift-c {
+  to {
+    transform: translate3d(-18vmax, 6vmax, 0) scale(1.08);
+  }
+}
+
+/* Arrival: the page settles in rather than snapping on. (Only opacity and a
+   short rise, and "backwards" fill, so nothing keeps a transform afterwards
+   that would trap fixed-position overlays.) */
+.site-header {
+  animation: arrive var(--dur-arrive) var(--ease-calm) backwards;
+  /* Above the page: glass (backdrop-filter) makes the header its own
+     stacking context, and the Music menu inside it must sit over the cards. */
+  position: relative;
+  z-index: 30;
+}
+.app-main {
+  animation: arrive var(--dur-arrive) var(--ease-calm) 0.12s backwards;
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Each tab's panel eases in when it opens. */
+.panel {
+  animation: rise var(--dur-base) var(--ease-calm) backwards;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 .app-main {
   width: 100%;
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 4rem;
+  /* --dock-space: the dock's height (see Dock), so nothing hides beneath it. */
+  padding: 1.5rem 1.25rem calc(4rem + var(--dock-space, 0px));
   flex: 1;
 }
 
@@ -145,6 +267,7 @@ p {
   background: color-mix(in srgb, var(--paper) 88%, transparent);
 }
 .site-header__inner {
+  position: relative;
   max-width: var(--maxw);
   margin: 0 auto;
   padding: 1rem 1.25rem;
@@ -194,10 +317,15 @@ p {
 .tabs {
   display: flex;
   gap: 0.25rem;
-  border-bottom: 1px solid var(--line);
+  border: 1px solid transparent;
+  border-bottom-color: var(--line);
   margin: 0.5rem 0 1.5rem;
+  padding: 0.25rem 0.75rem 0;
+  flex-wrap: wrap;
 }
 .tab {
+  flex: none;
+  white-space: nowrap;
   appearance: none;
   background: none;
   border: none;
@@ -207,6 +335,9 @@ p {
   font-weight: 500;
   color: var(--ink-soft);
   cursor: pointer;
+  transition:
+    color var(--dur-base) var(--ease-calm),
+    border-color var(--dur-base) var(--ease-calm);
 }
 .tab[aria-selected='true'] {
   color: var(--ink);
@@ -312,6 +443,7 @@ textarea {
   flex-wrap: wrap;
 }
 .tag-chip {
+  min-height: 44px;
   appearance: none;
   font: inherit;
   font-size: 0.85rem;
@@ -322,14 +454,20 @@ textarea {
   padding: 0.35rem 0.8rem;
   cursor: pointer;
 }
+.tag-chip[aria-pressed='true']::before {
+  content: '✓ ';
+}
 .tag-chip[aria-pressed='true'] {
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--sage);
   background: var(--sage-soft);
   border-color: var(--sage);
-  color: #3f5a3a;
+  color: var(--sage-ink);
 }
 
 /* Buttons. */
 .btn {
+  min-height: 44px;
   appearance: none;
   font: inherit;
   font-weight: 600;
@@ -338,12 +476,37 @@ textarea {
   cursor: pointer;
   border: 1px solid transparent;
 }
+.btn,
+.tag-chip,
+.seg__btn,
+.prompt-btn,
+.sos-btn,
+.music-btn,
+.call-btn,
+.float-timer__pill {
+  transition:
+    background-color var(--dur-base) var(--ease-calm),
+    border-color var(--dur-base) var(--ease-calm),
+    color var(--dur-base) var(--ease-calm),
+    box-shadow var(--dur-base) var(--ease-calm),
+    transform var(--dur-press) var(--ease-calm);
+}
+.btn:active,
+.tag-chip:active,
+.music-btn:active,
+.float-timer__pill:active {
+  transform: translateY(1px);
+}
+.btn--sm {
+  padding: 0.5rem 0.95rem;
+  font-size: 0.88rem;
+}
 .btn--primary {
-  background: var(--terracotta);
+  background: var(--terracotta-deep);
   color: #fff;
 }
 .btn--primary:hover {
-  background: var(--terracotta-deep);
+  background: var(--terracotta-darker);
 }
 .btn--primary:disabled {
   background: var(--ink-faint);
@@ -387,7 +550,7 @@ textarea {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: 0.8rem 1rem;
   font-size: 0.92rem;
-  color: #3f5a3a;
+  color: var(--sage-ink);
 }
 .steps {
   margin: 0.4rem 0 0;
@@ -522,12 +685,13 @@ textarea {
   font: inherit;
   font-size: 0.8rem;
   color: var(--ink-soft);
-  padding: 0.3rem 0.7rem;
+  padding: 0.3rem 0.85rem;
+  min-height: 40px;
   border-radius: 999px;
   cursor: pointer;
 }
 .seg__btn[aria-pressed='true'] {
-  background: var(--terracotta);
+  background: var(--terracotta-deep);
   color: #fff;
 }
 
@@ -581,7 +745,7 @@ textarea {
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--sage-soft), var(--sage));
+  background: var(--orb-fill);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -633,6 +797,1136 @@ textarea {
   margin: 0.75rem 0 1.25rem;
 }
 
+/* ------------------------------ calm toolkit ------------------------------ */
+
+.site-header__right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.sos-btn {
+  appearance: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--terracotta-deep);
+  background: var(--paper-raised);
+  border: 1.5px solid var(--terracotta);
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  cursor: pointer;
+  min-height: 44px;
+}
+.sos-btn:hover {
+  background: var(--terracotta-deep);
+  color: #fff;
+}
+
+.calm-nav {
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+input[type='range'] {
+  width: 100%;
+  accent-color: var(--terracotta-deep);
+  min-height: 44px;
+}
+input[type='range']::-webkit-slider-thumb {
+  width: 28px;
+  height: 28px;
+}
+input[type='range']::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+}
+.intensity {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.intensity__value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  min-width: 7.5rem;
+  white-space: nowrap;
+}
+.intensity__word {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.intensity__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  max-width: calc(100% - 8.4rem);
+}
+
+.recommendation h3 {
+  margin-top: 0.25rem;
+}
+.rec__time {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+.rec__alts {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.player {
+  margin-bottom: 1rem;
+}
+.player__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.after-check {
+  margin-top: 0.5rem;
+}
+.caution {
+  background: var(--amber-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+}
+.pacer {
+  text-align: center;
+}
+.countdown {
+  text-align: center;
+  margin: 0.5rem 0 1rem;
+}
+.countdown__clock,
+.focus-clock__time {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-variant-numeric: tabular-nums;
+  margin: 0.25rem 0 0.75rem;
+}
+.textarea--short {
+  min-height: 72px;
+}
+
+.help-now {
+  background: var(--alert-bg);
+  border: 1px solid var(--alert-line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+.help-now__title {
+  font-weight: 600;
+  color: var(--alert-ink);
+  margin-bottom: 0.4rem;
+}
+.help-now__list {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.92rem;
+}
+.call-btn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
+  min-height: 44px;
+  padding: 0.5rem 0.85rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--alert-line);
+  border-radius: var(--radius-sm);
+  color: var(--alert-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.call-btn:hover {
+  border-color: var(--alert-ink);
+}
+.call-btn__detail {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.library-group {
+  border-top: 1px solid var(--line);
+  padding: 0.6rem 0;
+}
+.library-group summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  padding: 0.3rem 0;
+}
+.library-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.library-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.9rem;
+}
+.library-item__purpose {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  margin: 0.2rem 0 0;
+}
+.library-item__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: none;
+}
+
+.wins {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  background: var(--sage-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
+  color: var(--sage-ink);
+}
+.coping-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.coping-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  border-bottom: 1px dashed var(--line);
+  padding-bottom: 0.5rem;
+}
+
+.plan-section {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0;
+  padding: 0.9rem 0 0.6rem;
+}
+.plan-section legend {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  padding: 0;
+}
+.plan-items {
+  list-style: none;
+  margin: 0.2rem 0 0.6rem;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+.plan-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.7rem;
+}
+.plan-items--fixed li {
+  background: var(--sage-soft);
+}
+.plan-add {
+  display: flex;
+  gap: 0.5rem;
+}
+.plan-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+.plan-mini__title {
+  font-weight: 600;
+  margin: 0.6rem 0 0.2rem;
+}
+
+.link-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0.2rem 0;
+  min-height: 44px;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--terracotta-deep);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sos-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(43, 39, 34, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4vh 1rem;
+  overflow-y: auto;
+}
+.sos {
+  width: 100%;
+  max-width: 560px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.4rem;
+}
+.sos__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.sos__head h2 {
+  margin: 0;
+}
+.sos__head h2:focus {
+  outline: none;
+}
+.sos__plan {
+  margin: 1rem 0;
+}
+.sos__footer a {
+  display: inline-block;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.6rem 0.25rem;
+  font-weight: 600;
+}
+.sos__footer {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+  padding-top: 0.8rem;
+  margin: 1.2rem 0 0;
+}
+
+.hall-steps {
+  padding-left: 1.2rem;
+  font-size: 1.05rem;
+}
+.hall-steps li {
+  margin-bottom: 0.5rem;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin: 0.5rem 0 1rem;
+}
+.panel > .toggle {
+  border: 1px solid transparent;
+  padding: 0.6rem 1rem;
+}
+.toggle input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--sage);
+}
+
+.focus-clock {
+  text-align: center;
+  margin: 1rem 0;
+}
+.focus-clock__phase {
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--terracotta-deep);
+  font-weight: 600;
+  margin: 0;
+}
+.sound-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.prompts {
+  margin-top: 0.35rem;
+}
+.prompts__list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.prompt-btn {
+  min-height: 44px;
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--amber-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+.prompt-btn:hover {
+  border-color: var(--ink-faint);
+}
+
+@media (max-width: 520px) {
+  .library-item {
+    flex-direction: column;
+  }
+  .library-item__actions {
+    flex-direction: row;
+  }
+  .intensity__value {
+    min-width: 6rem;
+    font-size: 1.25rem;
+  }
+  .intensity__scale {
+    max-width: calc(100% - 6.9rem);
+  }
+}
+
+/* Print only the card being printed (exam-hall card, safety plan). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    box-shadow: none;
+    border: none;
+  }
+  .no-print,
+  .plan-add {
+    display: none !important;
+  }
+}
+
+/* ------------------------------ scenery ------------------------------ */
+
+/* The painted background that goes with the music (components/Scenery). */
+.scenery {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.scene {
+  position: absolute;
+  inset: 0;
+  animation: scene-in var(--dur-scene) var(--ease-calm) backwards;
+}
+.scene--leaving {
+  animation: scene-out var(--dur-scene) var(--ease-calm) forwards;
+}
+@keyframes scene-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes scene-out {
+  to {
+    opacity: 0;
+  }
+}
+/* The live scene fills the screen; its own resolution is set in code. */
+.scene__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* While a scene shows, the colour washes step aside and every surface turns
+   to frosted glass the scene glows through (an iOS-style material). The
+   tint stays opaque enough, and secondary text and accents a shade darker,
+   for AA contrast even over the night scenes. */
+:root[data-scene] {
+  --ink-soft: #564d44;
+  --ink-faint: #564d44;
+  --terracotta-deep: #853820;
+  /* Each scene tints its glass (and shadow) so the panels belong to it. */
+  --glass-rgb: 255, 250, 243;
+  --glass-alpha: 0.78;
+  --shade-rgb: 22, 16, 38;
+  --glass: rgba(var(--glass-rgb), var(--glass-alpha));
+  --glass-inner: rgba(255, 255, 255, 0.42);
+  --glass-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 14px 44px -14px rgba(var(--shade-rgb), 0.45);
+  --glass-blur: blur(22px) saturate(1.7);
+  /* A light edge, brightest top-left, like light catching real glass. */
+  --glass-rim: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0.18) 38%,
+    rgba(255, 255, 255, 0.08) 62%,
+    rgba(255, 255, 255, 0.4)
+  );
+}
+:root[data-scene='park'] {
+  --glass-rgb: 255, 243, 238;
+  --shade-rgb: 74, 38, 62;
+}
+:root[data-scene='ocean'] {
+  --glass-rgb: 255, 244, 236;
+  --glass-alpha: 0.8;
+  --shade-rgb: 40, 30, 70;
+}
+:root[data-scene='mist'] {
+  --glass-rgb: 253, 249, 240;
+  --shade-rgb: 52, 62, 58;
+}
+/* Night scenes: cooler glass, a little more of it for contrast. */
+:root[data-scene='valley'] {
+  --glass-rgb: 243, 244, 252;
+  --glass-alpha: 0.84;
+  --shade-rgb: 4, 8, 24;
+}
+:root[data-scene='rain'] {
+  --glass-rgb: 243, 246, 249;
+  --glass-alpha: 0.84;
+  --shade-rgb: 8, 14, 22;
+}
+:root[data-scene='twilight'] {
+  --glass-rgb: 252, 243, 246;
+  --glass-alpha: 0.83;
+  --shade-rgb: 20, 12, 30;
+}
+:root[data-scene] .app-shell::before,
+:root[data-scene] .app-shell::after,
+:root[data-scene] body::before {
+  display: none;
+}
+:root[data-scene] :focus-visible {
+  outline-color: var(--terracotta-deep);
+}
+
+/* Text that sits directly on the page is laid out like a card at all times
+   (padding, radius, an invisible border). When a scene shows behind it, it
+   simply gains a glass surface: nothing moves and nothing overlaps. */
+.greet,
+.tabs,
+.data-controls,
+.disclaimer,
+.panel > .toggle {
+  border-radius: var(--radius);
+}
+.card,
+.greet,
+.tabs,
+.data-controls,
+.disclaimer,
+.panel > .toggle,
+.site-header {
+  transition:
+    background-color var(--dur-base) var(--ease-calm),
+    border-color var(--dur-base) var(--ease-calm),
+    box-shadow var(--dur-base) var(--ease-calm);
+}
+
+/* The glass: every top-level surface over the scene. */
+:root[data-scene]
+  :is(
+    .card,
+    .greet,
+    .tabs,
+    .calm-nav,
+    .data-controls,
+    .disclaimer,
+    .panel > .toggle,
+    .panel > .btn--ghost,
+    .music-pop,
+    .float-timer:not(.float-timer--collapsed),
+    .float-timer__pill
+  ) {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--glass), var(--glass)) padding-box,
+    var(--glass-rim) border-box;
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+/* The header melts into the scene: glass that fades out below it. */
+:root[data-scene] .site-header {
+  background: none;
+  border-bottom-color: transparent;
+}
+:root[data-scene] .site-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 -20px; /* stays within the page's top padding */
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(var(--glass-rgb), calc(var(--glass-alpha) + 0.06)),
+    rgba(var(--glass-rgb), var(--glass-alpha)) 60%,
+    rgba(var(--glass-rgb), 0)
+  );
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  -webkit-mask-image: linear-gradient(to bottom, #000 64%, transparent);
+  mask-image: linear-gradient(to bottom, #000 64%, transparent);
+}
+/* Inside glass: lighter, unblurred glass, so blur never stacks. */
+:root[data-scene] .card .card {
+  background: var(--glass-inner);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-scene]
+  :is(textarea, input[type='text'], input[type='date'], select) {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+:root[data-scene]
+  :is(
+    .mood-option:not([aria-checked='true']),
+    .tag-chip:not([aria-pressed='true']),
+    .card .seg,
+    .prompt-btn,
+    .library-item,
+    .stat,
+    .plan-items li,
+    .bubble--assistant,
+    .consent,
+    .card .btn--ghost,
+    .data-action:not(:hover),
+    .music-btn:not(.is-playing),
+    .sos-btn
+  ) {
+  background-color: var(--glass-inner);
+}
+
+/* Smaller blur on phones; near-solid where blur is missing, on a device
+   that is struggling (set by SceneCanvas), or for reduced transparency. */
+@media (max-width: 520px) {
+  :root[data-scene] {
+    --glass-blur: blur(14px) saturate(1.5);
+  }
+}
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  :root[data-scene] {
+    --glass-alpha: 0.94;
+  }
+}
+:root[data-scene][data-low-power] {
+  --glass-alpha: 0.94;
+  --glass-blur: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-scene] {
+    --glass: var(--paper-raised);
+    --glass-inner: var(--paper);
+    --glass-blur: none;
+  }
+}
+
+/* ------------------------------ greeting ------------------------------ */
+
+.greet {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 0.25rem 0 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid transparent;
+}
+.greet__title {
+  font-size: clamp(1.6rem, 3.6vw, 2.2rem);
+  margin: 0 0 0.3rem;
+}
+.greet__line {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  max-width: 48ch;
+  margin: 0;
+}
+
+/* Eyebrow variant for quiet labels (dates, widget titles). */
+.eyebrow--muted {
+  color: var(--ink-soft);
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+}
+
+/* A circle that breathes at a calm pace; follow it or just let it be. */
+.breath-orb {
+  flex: none;
+  width: 84px;
+  text-align: center;
+}
+.breath-orb__circle {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+.breath-orb__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--sage-line);
+  animation: orb-ring var(--breath-cycle) var(--ease-breath) infinite;
+}
+.breath-orb__core {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--orb-fill);
+  box-shadow: var(--shadow);
+  animation: orb-breathe var(--breath-cycle) var(--ease-breath) infinite;
+}
+.breath-orb__cue {
+  position: relative;
+  height: 1.3em;
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.breath-orb__cue span {
+  position: absolute;
+  inset: 0;
+  animation: cue-in var(--breath-cycle) var(--ease-breath) infinite;
+}
+.breath-orb__cue .breath-orb__out {
+  animation-name: cue-out;
+}
+@keyframes orb-breathe {
+  0%,
+  100% {
+    transform: scale(0.76);
+  }
+  50% {
+    transform: scale(1);
+  }
+}
+@keyframes orb-ring {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.9;
+  }
+}
+@keyframes cue-in {
+  0%,
+  42%,
+  100% {
+    opacity: 1;
+  }
+  50%,
+  92% {
+    opacity: 0;
+  }
+}
+@keyframes cue-out {
+  0%,
+  42%,
+  100% {
+    opacity: 0;
+  }
+  50%,
+  92% {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------ music ------------------------------ */
+
+/* The welcome offer: an ordinary card in the page flow, under the greeting. */
+.music-invite {
+  animation: rise var(--dur-enter) var(--ease-calm) backwards;
+}
+.music-invite__title {
+  font-size: 1.25rem;
+  margin-bottom: 0.35rem;
+}
+.music-invite__lead {
+  color: var(--ink-soft);
+  margin-bottom: 0.9rem;
+}
+.music-invite__or {
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+  margin: 0.9rem 0 0.4rem;
+}
+
+.music {
+  position: relative;
+}
+.music-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.music-btn.is-playing {
+  color: var(--sage-ink);
+  border-color: var(--sage);
+  background: var(--sage-soft);
+}
+.music-btn:hover,
+.music-btn[aria-expanded='true'] {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+.music-btn.is-playing:hover,
+.music-btn.is-playing[aria-expanded='true'] {
+  color: var(--sage-ink);
+  border-color: var(--sage-ink);
+}
+.eq {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+.eq rect {
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+/* Resting heights read as a sound-level icon, not an ellipsis. */
+.eq rect:nth-child(1) {
+  transform: scaleY(0.45);
+}
+.eq rect:nth-child(3) {
+  transform: scaleY(0.7);
+}
+/* Slow enough to sit beside the breathing orb without fidgeting. */
+.is-playing .eq rect {
+  animation: eq 3s var(--ease-breath) infinite;
+}
+.is-playing .eq rect:nth-child(2) {
+  animation-delay: -1s;
+}
+.is-playing .eq rect:nth-child(3) {
+  animation-delay: -2s;
+}
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.music-pop {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 45; /* over the dock (40), under the SOS backdrop (50) */
+  width: min(330px, calc(100vw - 2rem));
+  padding: 1rem 1.1rem 0.4rem;
+  animation: pop-in var(--dur-base) var(--ease-calm) backwards;
+}
+.music-pop__title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  margin: 0 0 0.6rem;
+}
+.music-pop .field {
+  margin: 0.75rem 0 0.25rem;
+}
+.music-pop__scene {
+  color: var(--ink-faint);
+}
+.music-pop .toggle {
+  min-height: 44px;
+  margin: 0.25rem 0;
+}
+.sound-list--compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* A raised card that floats over the page (menus, the floating timer). */
+.card--float {
+  margin: 0;
+  box-shadow: var(--shadow-float);
+}
+
+/* ------------------------------ dock ------------------------------ */
+
+/* Bottom-right home of the floating timer. */
+.dock {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 40;
+  width: min(360px, calc(100vw - 2.5rem));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  max-height: calc(100dvh - 2.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+  transition: opacity var(--dur-base) var(--ease-calm);
+}
+.dock > * {
+  pointer-events: auto;
+}
+/* Would cover the header (and "Calm now"): step aside until it scrolls away. */
+.dock--tucked {
+  visibility: hidden;
+  opacity: 0;
+}
+.float-timer {
+  position: relative;
+  width: 100%;
+  padding: 1.1rem 1.2rem;
+  animation: dock-in var(--dur-enter) var(--ease-calm) backwards;
+}
+.float-timer__hide {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.6rem;
+  min-width: 44px;
+  padding-inline: 0.5rem;
+}
+.greet__motion {
+  font-size: 0.82rem;
+  margin-top: 0.15rem;
+}
+@keyframes dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.float-timer--collapsed {
+  width: auto;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+.float-timer__pill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 52px;
+  padding: 0.35rem 1.15rem 0.35rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-float);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.float-timer__pill:hover {
+  border-color: var(--ink-faint);
+}
+.float-timer__pill .ring {
+  width: 38px;
+  height: 38px;
+}
+
+/* The mini timer face (floating timer + pop-out window). */
+.mini-timer {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.25rem 1rem;
+}
+.mini-timer .ring {
+  width: 60px;
+  height: 60px;
+}
+.mini-timer .card__eyebrow {
+  margin: 0;
+}
+.mini-timer--break .card__eyebrow {
+  color: var(--sage-ink);
+}
+.mini-timer__time {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.mini-timer__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+}
+.ring {
+  transform: rotate(-90deg);
+  flex: none;
+}
+.ring__track,
+.ring__progress {
+  fill: none;
+  stroke-width: 3.5;
+}
+.ring__track {
+  stroke: var(--line);
+}
+.ring__progress {
+  stroke: var(--terracotta);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+.mini-timer--break .ring__progress {
+  stroke: var(--sage);
+}
+
+/* The pop-out window's own page. */
+.pip-body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem 1.25rem;
+}
+.pip-timer {
+  width: max-content;
+  max-width: 100%;
+}
+.pip-timer .ring {
+  width: 72px;
+  height: 72px;
+}
+.pip-timer__brand {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin: 0 0 0.6rem;
+}
+.pip-timer .mini-timer__time {
+  font-size: 2.6rem;
+}
+
+/* Breathing room between a row of buttons and the hint beneath it. */
+.tag-row + .field__hint {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 520px) {
+  .greet {
+    gap: 0.9rem;
+  }
+  .breath-orb {
+    width: 64px;
+  }
+  .breath-orb__circle {
+    width: 58px;
+    height: 58px;
+  }
+  .breath-orb__core {
+    width: 44px;
+    height: 44px;
+  }
+  /* Phones: the full sound list lives in the Music menu. */
+  .music-invite__others {
+    display: none;
+  }
+  /* The menu spans the header rather than hanging off the button. */
+  .music {
+    position: static;
+  }
+  .music-pop {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+  .dock {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: auto;
+  }
+}
+
 /* ------------------------------ misc ------------------------------ */
 
 .muted {
@@ -644,10 +1938,157 @@ textarea {
 }
 .disclaimer {
   font-size: 0.82rem;
-  color: var(--ink-faint);
-  border-top: 1px solid var(--line);
-  padding-top: 1rem;
+  color: var(--ink-soft); /* sits on the page washes, not a card */
+  border: 1px solid transparent;
+  border-top-color: var(--line);
+  padding: 1rem 1.25rem;
   margin-top: 1rem;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.6rem;
+}
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  color: var(--ink-soft);
+}
+
+/* Consent before the first AI use */
+.consent {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-top: 1rem;
+}
+.consent h3 {
+  margin-bottom: 0.4rem;
+}
+.consent .toggle {
+  align-items: flex-start;
+  color: var(--ink);
+}
+.consent .toggle input {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+.consent__hint,
+.data-controls__error {
+  color: var(--alert-ink);
+}
+/* Status lines take focus after an action; no ring, since they are text. */
+.checkin__status:focus,
+.data-controls [role='status']:focus {
+  outline: none;
+}
+.helpline-line a {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Your data: backup, restore, AI off, delete */
+.data-controls {
+  border: 1px solid transparent;
+  border-top-color: var(--line);
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+}
+.data-controls__title {
+  font-size: 1.05rem;
+  margin-bottom: 0.25rem;
+}
+.data-controls__lead {
+  font-size: 0.88rem;
+  margin-bottom: 0.6rem;
+}
+
+/* The data actions: tiles with an icon, a title and what they do. */
+.data-actions {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.6rem;
+}
+.data-actions li {
+  display: flex;
+}
+.data-action {
+  appearance: none;
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.8rem;
+  row-gap: 0.1rem;
+  align-items: start;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) var(--ease-calm),
+    border-color var(--dur-base) var(--ease-calm),
+    box-shadow var(--dur-base) var(--ease-calm),
+    transform var(--dur-press) var(--ease-calm);
+}
+.data-action:hover {
+  border-color: var(--ink-faint);
+  box-shadow: var(--shadow);
+}
+.data-action:active {
+  transform: translateY(1px);
+}
+.data-action__icon {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--sage-soft);
+  color: var(--sage-ink);
+}
+.data-action__title {
+  font-weight: 600;
+  line-height: 1.35;
+}
+.data-action__hint {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+/* Deleting is set apart, in the alert colours. */
+.data-danger {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--line);
+}
+.data-action--danger .data-action__icon {
+  background: var(--alert-bg);
+  color: var(--alert-ink);
+}
+.data-action--danger .data-action__title {
+  color: var(--alert-ink);
+}
+.data-action--danger:hover {
+  border-color: var(--alert-line);
+  background: var(--alert-bg);
+}
+
+.legal h2 {
+  font-size: 1.15rem;
+  margin-top: 1.5rem;
 }
 .empty {
   text-align: center;
@@ -672,13 +2113,40 @@ textarea {
   }
 }
 
+/* "Pause motion": the student stilled the page from the greeting. */
+[data-motion='off'] .app-shell::before,
+[data-motion='off'] .app-shell::after,
+[data-motion='off'] body::before,
+[data-motion='off'] .breath-orb__ring,
+[data-motion='off'] .breath-orb__core,
+[data-motion='off'] .is-playing .eq rect {
+  animation: none;
+}
+[data-motion='off'] .breath-orb__cue {
+  display: none;
+}
+
 /* Respect users who prefer reduced motion (accessibility). */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  /* Ambient motion stops entirely (at rest, not at a keyframe's end). */
+  .app-shell::before,
+  .app-shell::after,
+  body::before,
+  .breath-orb__ring,
+  .breath-orb__core,
+  .is-playing .eq rect {
+    animation: none;
+  }
+  .breath-orb__cue,
+  .greet__motion {
+    display: none; /* nothing moves, so there is nothing to pause */
   }
 }

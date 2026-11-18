@@ -9,3 +9,10 @@ dist
 coverage
 
 *.tsbuildinfo
+
+# Design-hook cache (local tool state)
+.impeccable/
+
+# Playwright
+test-results/
+playwright-report/

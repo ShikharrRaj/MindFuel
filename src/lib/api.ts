@@ -25,11 +25,15 @@ async function errorMessage(res: Response): Promise<string> {
 }
 
 /** Request a structured journal analysis. Throws with a friendly message on failure. */
-export async function requestAnalysis(req: AnalyzeRequest): Promise<Analysis> {
+export async function requestAnalysis(
+  req: AnalyzeRequest,
+  signal?: AbortSignal,
+): Promise<Analysis> {
   const res = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(req),
+    signal,
   })
   if (!res.ok) throw new Error(await errorMessage(res))
   const data = (await res.json()) as { analysis: Analysis }

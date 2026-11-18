@@ -3,18 +3,25 @@
  * in token-by-token (genuine streaming, no fake delay) and every message is
  * conditioned on the student's exam context and recent mood. A local crisis
  * check on the user's own message surfaces help immediately, before any network
- * round-trip.
+ * round-trip. Until the student agrees to the AI (AiConsent), the input is
+ * replaced by the consent notice.
  */
 
 import { useEffect, useRef, useState } from 'react'
 import { streamChat } from '../lib/api'
+import { MAX_HISTORY, MAX_TEXT_LENGTH } from '../lib/limits'
 import { detectCrisis } from '../lib/safety'
 import type { ChatMessage, UserProfile } from '../lib/types'
+import AiConsent from './AiConsent'
+import HelplineLine from './HelplineLine'
 import SafetyCard from './SafetyCard'
 
 interface Props {
   profile: UserProfile
   recentMoodSummary: string
+  /** Required, so no caller can skip consent by leaving it out. */
+  aiConsent: boolean
+  onConsent: () => void
 }
 
 const GREETING: ChatMessage = {
@@ -23,12 +30,32 @@ const GREETING: ChatMessage = {
     "I'm here whenever you need to talk — about the exam, the pressure, or anything at all. What's on your mind right now?",
 }
 
-export default function Companion({ profile, recentMoodSummary }: Props) {
+export default function Companion({
+  profile,
+  recentMoodSummary,
+  aiConsent,
+  onConsent,
+}: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING])
   const [input, setInput] = useState('')
   const [pending, setPending] = useState(false)
   const [showSafety, setShowSafety] = useState(false)
+  const [failed, setFailed] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Agreeing swaps the consent panel for the message box: focus follows.
+  const focusInputNext = useRef(false)
+  // Leaving the tab stops a reply in progress (and its cost).
+  const inflight = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    if (aiConsent && focusInputNext.current) {
+      focusInputNext.current = false
+      inputRef.current?.focus()
+    }
+  }, [aiConsent])
+
+  useEffect(() => () => inflight.current?.abort(), [])
 
   // Keep the latest message in view as content streams in.
   useEffect(() => {
@@ -47,6 +74,9 @@ export default function Companion({ profile, recentMoodSummary }: Props) {
     setMessages([...history, { role: 'assistant', content: '' }])
     setInput('')
     setPending(true)
+    setFailed(false)
+    const controller = new AbortController()
+    inflight.current = controller
 
     try {
       await streamChat(
@@ -54,7 +84,7 @@ export default function Companion({ profile, recentMoodSummary }: Props) {
           exam: profile.exam,
           examDateISO: profile.examDateISO,
           recentMoodSummary,
-          messages: history,
+          messages: history.slice(-MAX_HISTORY),
         },
         (chunk) => {
           setMessages((prev) => {
@@ -67,8 +97,11 @@ export default function Companion({ profile, recentMoodSummary }: Props) {
             return next
           })
         },
+        controller.signal,
       )
     } catch (err) {
+      if (controller.signal.aborted) return
+      setFailed(true)
       setMessages((prev) => {
         const next = [...prev]
         next[next.length - 1] = {
@@ -81,6 +114,7 @@ export default function Companion({ profile, recentMoodSummary }: Props) {
         return next
       })
     } finally {
+      if (inflight.current === controller) inflight.current = null
       setPending(false)
     }
   }
@@ -110,23 +144,43 @@ export default function Companion({ profile, recentMoodSummary }: Props) {
           ))}
         </div>
 
-        <form className="chat__form" onSubmit={send}>
-          <label htmlFor="chat-input" className="sr-only">
-            Type a message to MindFuel
-          </label>
-          <input
-            id="chat-input"
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message…"
-            maxLength={4000}
-            autoComplete="off"
+        {!aiConsent ? (
+          <AiConsent
+            purpose="chat"
+            onAgree={() => {
+              focusInputNext.current = true
+              onConsent()
+            }}
           />
-          <button type="submit" className="btn btn--primary" disabled={pending}>
-            {pending ? <span className="spinner" aria-hidden="true" /> : 'Send'}
-          </button>
-        </form>
+        ) : (
+          <form className="chat__form" onSubmit={send}>
+            <label htmlFor="chat-input" className="sr-only">
+              Type a message to MindFuel
+            </label>
+            <input
+              id="chat-input"
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type a message…"
+              maxLength={MAX_TEXT_LENGTH}
+              autoComplete="off"
+            />
+            <button
+              type="submit"
+              className="btn btn--primary"
+              disabled={pending}
+            >
+              {pending ? (
+                <span className="spinner" aria-hidden="true" />
+              ) : (
+                'Send'
+              )}
+            </button>
+          </form>
+        )}
+        {failed && <HelplineLine />}
       </div>
     </section>
   )

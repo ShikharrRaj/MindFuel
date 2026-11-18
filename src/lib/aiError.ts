@@ -1,10 +1,9 @@
 /**
  * Shared helpers for turning raw Gemini SDK failures into honest, user-facing
- * responses. The model is reached over the network on a free-tier key, so two
- * failure modes dominate: 429 RESOURCE_EXHAUSTED (quota/rate limit) and 503
- * UNAVAILABLE (transient overload). We classify these so the UI can show calm,
- * specific guidance instead of a scary "something went wrong" — and so callers
- * know which failures are worth a quick retry.
+ * responses, and into log lines that never carry model or user text.
+ *
+ * The SDK's ApiError has a numeric `status`; we read that first and only fall
+ * back to the message text (e.g. a network or stream error with no status).
  */
 
 export interface ClassifiedError {
@@ -12,68 +11,76 @@ export interface ClassifiedError {
   status: number
   /** Friendly, on-brand message safe to show the user. */
   message: string
-  /** True for transient errors (overload) that a short retry may clear. */
-  retryable: boolean
 }
 
+/** Upstream HTTP status of a Gemini failure, if one can be found. */
+export function upstreamStatus(err: unknown): number | undefined {
+  const status = (err as { status?: unknown } | null)?.status
+  if (typeof status === 'number' && status >= 100 && status < 600) {
+    return status
+  }
+  const text = err instanceof Error ? err.message : String(err)
+  const code = /"code"\s*:\s*(\d{3})/.exec(text) ?? /^(\d{3})\b/.exec(text)
+  return code ? Number(code[1]) : undefined
+}
+
+const GOOGLE_STATUS =
+  /\b(RESOURCE_EXHAUSTED|UNAVAILABLE|INVALID_ARGUMENT|NOT_FOUND|PERMISSION_DENIED|DEADLINE_EXCEEDED|INTERNAL|FAILED_PRECONDITION)\b/
+
 /**
- * Map a thrown Gemini error to a status + message. We match on the error text
- * because the SDK surfaces the upstream code (e.g. "429", "RESOURCE_EXHAUSTED")
- * inside the message rather than a stable field.
+ * What to log about a failure: its type and status codes only. The SDK's
+ * messages can quote model output (e.g. a stream chunk it failed to parse),
+ * and logs must never hold journal-derived text.
  */
+export function describeError(err: unknown): {
+  name: string
+  upstream?: number
+  code?: string
+} {
+  const name = err instanceof Error ? err.name : typeof err
+  const text = err instanceof Error ? err.message : String(err)
+  const upstream = upstreamStatus(err)
+  const code = GOOGLE_STATUS.exec(text)?.[1]
+  return {
+    name,
+    ...(upstream ? { upstream } : {}),
+    ...(code ? { code } : {}),
+  }
+}
+
+/** Map a thrown Gemini error to a status + calm message for the browser. */
 export function classifyAiError(
   err: unknown,
   fallback: string,
 ): ClassifiedError {
+  const upstream = upstreamStatus(err)
   const text = (err instanceof Error ? err.message : String(err)).toLowerCase()
 
-  if (
-    text.includes('429') ||
-    text.includes('resource_exhausted') ||
-    text.includes('quota') ||
-    text.includes('rate limit')
-  ) {
+  const quota =
+    upstream === 429 ||
+    (upstream === undefined &&
+      (text.includes('resource_exhausted') || text.includes('rate limit')))
+  if (quota) {
     return {
       status: 429,
       message:
-        "I'm getting a lot of messages right now — give me a few seconds and try again.",
-      retryable: false, // quota waits are far longer than a request can stay open
+        "I'm getting a lot of messages right now. Give me a few seconds and try again.",
     }
   }
 
-  if (
-    text.includes('503') ||
-    text.includes('unavailable') ||
-    text.includes('overloaded')
-  ) {
+  const overloaded =
+    upstream === 500 ||
+    upstream === 503 ||
+    upstream === 504 ||
+    (upstream === undefined &&
+      (text.includes('unavailable') || text.includes('overloaded')))
+  if (overloaded) {
     return {
       status: 503,
       message:
         'The companion is briefly overloaded. Please try again in a moment.',
-      retryable: true,
     }
   }
 
-  return { status: 502, message: fallback, retryable: false }
-}
-
-/** Sleep helper for backoff between retries. */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-/**
- * Run `fn`, retrying once on a transient (overload) error after a short pause.
- * We deliberately do NOT retry quota errors: the model asks us to wait tens of
- * seconds, which outlives the request, so an immediate retry would only fail
- * again and waste the function's time budget.
- */
-export async function withTransientRetry<T>(fn: () => Promise<T>): Promise<T> {
-  try {
-    return await fn()
-  } catch (err) {
-    if (!classifyAiError(err, '').retryable) throw err
-    await delay(500)
-    return fn()
-  }
+  return { status: 502, message: fallback }
 }

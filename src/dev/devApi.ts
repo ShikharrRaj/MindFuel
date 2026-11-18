@@ -14,6 +14,21 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { loadEnv, type Plugin, type ViteDevServer } from 'vite'
 
+/** Server-only settings the handlers read from process.env (see .env.example). */
+const SERVER_ENV = [
+  'GEMINI_API_KEY',
+  'GEMINI_MODEL',
+  'GEMINI_FALLBACK_MODEL',
+  'AI_DAILY_LIMIT_ANALYZE',
+  'AI_DAILY_LIMIT_CHAT',
+  'RATE_LIMIT_ALLOW_MEMORY',
+  'RATE_LIMIT_SALT',
+  'UPSTASH_REDIS_REST_URL',
+  'UPSTASH_REDIS_REST_TOKEN',
+  'KV_REST_API_URL',
+  'KV_REST_API_TOKEN',
+]
+
 /** Collect a Node request into a Web `Request`. */
 function toWebRequest(req: IncomingMessage): Promise<Request> {
   return new Promise((resolve, reject) => {
@@ -55,9 +70,14 @@ async function sendWebResponse(
 }
 
 /** Wire a single /api route to its Edge handler module. */
-function route(server: ViteDevServer, path: string, modulePath: string): void {
+function route(
+  server: ViteDevServer,
+  path: string,
+  modulePath: string,
+  methods: string[] = ['POST'],
+): void {
   server.middlewares.use(path, async (req, res, next) => {
-    if (req.method !== 'POST') return next()
+    if (!methods.includes(req.method ?? '')) return next()
     try {
       const mod = await server.ssrLoadModule(modulePath)
       const handler = mod.default as (r: Request) => Promise<Response>
@@ -82,11 +102,13 @@ export function devApiPlugin(): Plugin {
       // Make non-VITE_ env (e.g. GEMINI_API_KEY from .env.local) visible to the
       // handlers, which read process.env like they do on Vercel.
       const env = loadEnv(server.config.mode, process.cwd(), '')
-      if (env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY) {
-        process.env.GEMINI_API_KEY = env.GEMINI_API_KEY
+      for (const key of SERVER_ENV) {
+        if (env[key] && !process.env[key]) process.env[key] = env[key]
       }
       route(server, '/api/analyze', '/api/analyze.ts')
       route(server, '/api/chat', '/api/chat.ts')
+      route(server, '/api/report', '/api/report.ts')
+      route(server, '/api/health', '/api/health.ts', ['GET', 'HEAD'])
     },
   }
 }
